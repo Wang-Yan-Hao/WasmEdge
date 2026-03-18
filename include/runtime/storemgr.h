@@ -16,6 +16,7 @@
 #include "runtime/instance/component/component.h"
 #include "runtime/instance/module.h"
 
+#include <map>
 #include <mutex>
 #include <shared_mutex>
 #include <vector>
@@ -142,6 +143,91 @@ private:
   /// instance here to keep the instances.
   /// FIXME: Is this necessary to be a vector?
   std::unique_ptr<Instance::ModuleInstance> FailedMod;
+
+  /// \brief Node structure representing a module's dependency state.
+  struct ModuleDependency {
+    uint32_t InDegree = 0;
+    bool IsRegistered = true;
+    std::vector<const Instance::ModuleInstance *> OutDegree;
+  };
+
+  /// \name Module dependency tree
+  std::map<const Instance::ModuleInstance *, ModuleDependency> DependencyTree;
+
+  /// \brief Registers a module instance and its dependency
+  /// \param ModInst The module instance being registered.
+  /// \param DetectedDeps The set of module instances that ModInst depends on.
+  void registerDependency(
+      const Instance::ModuleInstance *Consumer,
+      const std::set<const Instance::ModuleInstance *> &Providers) {
+    if (!Consumer)
+      return;
+
+    std::unique_lock Lock(Mutex);
+
+    auto &ConsumerNode = DependencyTree[Consumer];
+    ConsumerNode.IsRegistered = true;
+
+    for (const auto *Provider : Providers) {
+      if (!Provider)
+        continue;
+      ConsumerNode.OutDegree.push_back(Provider);
+      DependencyTree[Provider].InDegree++;
+    }
+  }
+
+  /// \brief Unregisters a module instance from the dependency system.
+  /// \param Inst The pointer to the module instance to be unregistered.
+  void unregisterDependency(const Instance::ModuleInstance *Inst) {
+    std::unique_lock Lock(Mutex);
+    auto It = DependencyTree.find(Inst);
+    if (It == DependencyTree.end()) {
+      return;
+    }
+    It->second.IsRegistered = false;
+    tryCleanupInternal(Inst);
+  }
+
+  /// \brief Internal gatekeeper to check if a module can be safely deleted.
+  /// \param Inst The module instance to check for cleanup conditions.
+  void tryCleanupInternal(const Instance::ModuleInstance *Inst) {
+    auto It = DependencyTree.find(Inst);
+    if (It == DependencyTree.end()) {
+      return;
+    }
+
+    if (It->second.InDegree == 0 && !It->second.IsRegistered) {
+      unlinkInternal(Inst);
+    }
+  }
+
+  /// \brief Internal recursive function to unlink dependencies and delete
+  /// module.
+  /// \param Inst The pointer to the module instance to be processed.
+  void unlinkInternal(const Instance::ModuleInstance *Inst) {
+    auto It = DependencyTree.find(Inst);
+    if (It == DependencyTree.end()) {
+      return;
+    }
+
+    std::vector<const Instance::ModuleInstance *> Providers =
+        std::move(It->second.OutDegree);
+
+    DependencyTree.erase(It);
+    delete Inst;
+
+    for (auto *Provider : Providers) {
+      auto ProvIt = DependencyTree.find(Provider);
+      if (ProvIt != DependencyTree.end()) {
+        // Decrement provider's reference count.
+        if (ProvIt->second.InDegree > 0) {
+          ProvIt->second.InDegree--;
+        }
+
+        tryCleanupInternal(Provider);
+      }
+    }
+  }
 };
 
 } // namespace Runtime
