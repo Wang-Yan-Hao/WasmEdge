@@ -235,6 +235,21 @@ VM::unsafeRegisterModule(const Runtime::Instance::ModuleInstance &ModInst,
   return ExecutorEngine.registerModule(StoreRef, ModInst, Name);
 }
 
+Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+VM::unsafeUnregisterModule(std::string_view Name) {
+  auto It = std::find_if(
+      RegModInsts.begin(), RegModInsts.end(),
+      [&](const auto &Mod) { return Mod->getModuleName() == Name; });
+
+  if (It == RegModInsts.end()) {
+    return Unexpect(ErrCode::Value::WrongVMWorkflow);
+  }
+
+  std::unique_ptr<Runtime::Instance::ModuleInstance> ModPtr = std::move(*It);
+  RegModInsts.erase(It);
+  return ModPtr;
+}
+
 Expect<std::vector<std::pair<ValVariant, ValType>>>
 VM::unsafeRunWasmFile(const std::filesystem::path &Path, std::string_view Func,
                       Span<const ValVariant> Params,
