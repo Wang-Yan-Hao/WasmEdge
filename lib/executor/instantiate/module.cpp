@@ -65,12 +65,18 @@ Executor::instantiate(Runtime::StoreManager &StoreMgr, const AST::Module &Mod,
     };
   };
 
+  std::set<const WasmEdge::Runtime::Instance::ModuleInstance *> DetectedDeps;
+
   // Instantiate ImportSection and do import matching. (ImportSec)
   const AST::ImportSection &ImportSec = Mod.getImportSection();
   EXPECTED_TRY(instantiate(
-                   [&StoreMgr](std::string_view ModName)
+                   [&StoreMgr, &DetectedDeps](std::string_view ModName)
                        -> const WasmEdge::Runtime::Instance::ModuleInstance * {
-                     return StoreMgr.findModule(ModName);
+                     const auto *Found = StoreMgr.findModule(ModName);
+                     if (Found) {
+                       DetectedDeps.emplace(Found);
+                     }
+                     return Found;
                    },
                    *ModInst, ImportSec)
                    .map_error(ReportError(ASTNodeAttr::Sec_Import)));
@@ -148,6 +154,8 @@ Executor::instantiate(Runtime::StoreManager &StoreMgr, const AST::Module &Mod,
   if (Name.has_value()) {
     StoreMgr.registerModule(ModInst.get());
   }
+
+  StoreMgr.addDependency(ModInst.get(), DetectedDeps);
 
   return ModInst;
 }
