@@ -3521,12 +3521,25 @@ void WasmEdge_VMForceDeleteRegisteredModule(
     return; // Invalid store context
   }
 
+  auto *Store = fromStoreCxt(StoreCxt);
+  auto NameView = genStrView(ModuleName);
   const WasmEdge_ModuleInstanceContext *ModInst =
       WasmEdge_StoreFindModule(StoreCxt, ModuleName);
+
   if (ModInst) {
-    fromStoreCxt(StoreCxt)->unregisterModule(genStrView(ModuleName));
-    WasmEdge_ModuleInstanceDelete(
-        const_cast<WasmEdge_ModuleInstanceContext *>(ModInst));
+    const auto *Inst = fromModCxt(ModInst);
+
+    Store->unregisterModule(NameView);
+
+    if (Store->unlinkDependency(Inst)) {
+      WasmEdge_ModuleInstanceDelete(
+          const_cast<WasmEdge_ModuleInstanceContext *>(ModInst));
+      spdlog::info("Module [{}] successfully unlinked and deleted.", NameView);
+    } else {
+      spdlog::warn("Module [{}] is still busy (InDegree > 0). Physical "
+                   "deletion deferred.",
+                   NameView);
+    }
   }
 }
 
