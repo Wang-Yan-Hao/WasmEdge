@@ -309,6 +309,7 @@ VM::unsafeRunWasmFile(const AST::Module &Module, std::string_view Func,
   EXPECTED_TRY(ValidatorEngine.validate(Module));
   EXPECTED_TRY(ActiveModInst,
                ExecutorEngine.instantiateModule(StoreRef, Module));
+  StoreRef.linkAnonymousModule(ActiveModInst.get());
 
   // Get module instance.
   if (ActiveModInst) {
@@ -486,6 +487,7 @@ Expect<void> VM::unsafeInstantiate() {
 
     EXPECTED_TRY(ActiveModInst,
                  ExecutorEngine.instantiateModule(StoreRef, *Mod));
+    StoreRef.linkAnonymousModule(ActiveModInst.get());
     Stage = VMStage::Instantiated;
     return {};
   } else if (Comp) {
