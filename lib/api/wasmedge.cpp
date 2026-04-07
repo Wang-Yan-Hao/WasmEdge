@@ -3508,7 +3508,7 @@ WASMEDGE_CAPI_EXPORT void WasmEdge_VMCleanup(WasmEdge_VMContext *Cxt) noexcept {
   }
 }
 
-void WasmEdge_VMForceDeleteRegisteredModule(
+void WasmEdge_VMDeleteRegisteredModule(
     const WasmEdge_VMContext *Cxt, const WasmEdge_String ModuleName) noexcept {
   if (!Cxt || !ModuleName.Buf) {
     return; // Invalid input
@@ -3521,12 +3521,24 @@ void WasmEdge_VMForceDeleteRegisteredModule(
     return; // Invalid store context
   }
 
-  const WasmEdge_ModuleInstanceContext *ModInst =
-      WasmEdge_StoreFindModule(StoreCxt, ModuleName);
-  if (ModInst) {
-    fromStoreCxt(StoreCxt)->unregisterModule(genStrView(ModuleName));
-    WasmEdge_ModuleInstanceDelete(
-        const_cast<WasmEdge_ModuleInstanceContext *>(ModInst));
+  auto NameView = genStrView(ModuleName);
+  auto *Store = fromStoreCxt(StoreCxt);
+  auto &VM = const_cast<WasmEdge_VMContext *>(Cxt)->VM;
+
+  auto *ModInst = Store->findModule(NameView);
+  if (!ModInst) {
+    return;
+  }
+
+  Store->unregisterModule(NameView);
+  auto Res = VM.unregisterModule(NameView);
+
+  if (Res) {
+    std::unique_ptr<WasmEdge::Runtime::Instance::ModuleInstance> ModPtr =
+        std::move(*Res);
+    Store->unlinkDependency(ModPtr.release());
+  } else {
+    Store->unlinkDependency(ModInst);
   }
 }
 
