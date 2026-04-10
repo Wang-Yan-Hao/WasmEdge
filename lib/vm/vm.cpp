@@ -225,6 +225,19 @@ VM::unsafeRegisterModule(std::string_view Name,
   return ExecutorEngine.registerModule(StoreRef, ModInst, Name);
 }
 
+Expect<void> VM::unsafeUnregisterModule(std::string_view Name) {
+  auto It = std::find_if(
+      RegModInsts.begin(), RegModInsts.end(),
+      [&](const auto &Mod) { return Mod->getModuleName() == Name; });
+
+  if (It != RegModInsts.end()) {
+    auto *Mod = It->release();
+    RegModInsts.erase(It);
+    Mod->resetSelfDegree();
+  }
+  return {};
+}
+
 Expect<std::vector<std::pair<ValVariant, ValType>>>
 VM::unsafeRunWasmFile(const std::filesystem::path &Path, std::string_view Func,
                       Span<const ValVariant> Params,

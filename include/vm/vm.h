@@ -73,6 +73,12 @@ public:
     return unsafeRegisterModule(Name, ModInst);
   }
 
+  /// Unregister a named module instance.
+  Expect<void> unregisterModule(std::string_view Name) {
+    std::unique_lock Lock(Mutex);
+    return unsafeUnregisterModule(Name);
+  }
+
   /// Rapidly load, validate, instantiate, and run wasm function.
   Expect<std::vector<std::pair<ValVariant, ValType>>>
   runWasmFile(const std::filesystem::path &Path, std::string_view Func,
@@ -289,6 +295,8 @@ private:
   Expect<void>
   unsafeRegisterModule(std::string_view Name,
                        const Runtime::Instance::ModuleInstance &ModInst);
+
+  Expect<void> unsafeUnregisterModule(std::string_view Name);
 
   Expect<std::vector<std::pair<ValVariant, ValType>>>
   unsafeRunWasmFile(const std::filesystem::path &Path, std::string_view Func,
