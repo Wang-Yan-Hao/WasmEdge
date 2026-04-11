@@ -3508,8 +3508,9 @@ WASMEDGE_CAPI_EXPORT void WasmEdge_VMCleanup(WasmEdge_VMContext *Cxt) noexcept {
   }
 }
 
-void WasmEdge_VMForceDeleteRegisteredModule(
-    const WasmEdge_VMContext *Cxt, const WasmEdge_String ModuleName) noexcept {
+WASMEDGE_CAPI_EXPORT void
+WasmEdge_VMDeleteRegisteredModule(const WasmEdge_VMContext *Cxt,
+                                  const WasmEdge_String ModuleName) noexcept {
   if (!Cxt || !ModuleName.Buf) {
     return; // Invalid input
   }
@@ -3525,9 +3526,16 @@ void WasmEdge_VMForceDeleteRegisteredModule(
       WasmEdge_StoreFindModule(StoreCxt, ModuleName);
   if (ModInst) {
     fromStoreCxt(StoreCxt)->unregisterModule(genStrView(ModuleName));
-    WasmEdge_ModuleInstanceDelete(
-        const_cast<WasmEdge_ModuleInstanceContext *>(ModInst));
+    (const_cast<WasmEdge_VMContext *>(Cxt)->VM)
+        .unregisterModule(genStrView(ModuleName));
+    const_cast<Runtime::Instance::ModuleInstance *>(fromModCxt(ModInst))
+        ->resetSelfDegree();
   }
+}
+
+WASMEDGE_CAPI_EXPORT void WasmEdge_VMForceDeleteRegisteredModule(
+    const WasmEdge_VMContext *Cxt, const WasmEdge_String ModuleName) noexcept {
+  WasmEdge_VMDeleteRegisteredModule(Cxt, ModuleName);
 }
 
 WASMEDGE_CAPI_EXPORT uint32_t

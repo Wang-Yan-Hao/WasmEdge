@@ -603,18 +603,18 @@ WasmEdge_VMGetFunctionList(const WasmEdge_VMContext *Cxt,
                            const WasmEdge_FunctionTypeContext **FuncTypes,
                            const uint32_t Len) WASMEDGE_CAPI_NOEXCEPT;
 
-/// Forcibly delete a registered module from the VM context.
+/// Unregister and trigger the deletion of a registered module from the VM
+/// context.
 ///
-/// \warning This function does not check whether other modules depend on the
-/// target. Deleting a module that is still in use may cause undefined behavior
-/// or crashes.
-///
-/// A safer deletion API may be introduced in the future once module dependency
-/// management is implemented.
+/// This function initiates the lifecycle management for the target module.
+/// With the implemented dependency tracking, the module is not necessarily
+/// destroyed immediately. It will be unlinked from the VM, but physical
+/// deallocation only occurs when its "Self-Degree" is reset and its
+/// "In-Degree" (references from other modules) reaches zero.
 ///
 /// \param Cxt the WasmEdge_VMContext to delete the module from.
 /// \param ModuleName the name of the module to delete.
-WASMEDGE_CAPI_EXPORT extern void WasmEdge_VMForceDeleteRegisteredModule(
+WASMEDGE_CAPI_EXPORT extern void WasmEdge_VMDeleteRegisteredModule(
     const WasmEdge_VMContext *Cxt,
     const WasmEdge_String ModuleName) WASMEDGE_CAPI_NOEXCEPT;
 
