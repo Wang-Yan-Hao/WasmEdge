@@ -117,7 +117,11 @@ public:
 
   void resetSelfDegree() noexcept {
     SelfDegree.store(0, std::memory_order_release);
-    if (InDegree.load(std::memory_order_acquire) == 0) {
+  }
+
+  void tryToDelete() noexcept {
+    if (SelfDegree.load(std::memory_order_acquire) == 0 &&
+        InDegree.load(std::memory_order_acquire) == 0) {
       delete this;
     }
   }

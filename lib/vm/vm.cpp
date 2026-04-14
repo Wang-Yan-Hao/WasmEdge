@@ -234,6 +234,7 @@ Expect<void> VM::unsafeUnregisterModule(std::string_view Name) {
     auto *Mod = It->release();
     RegModInsts.erase(It);
     Mod->resetSelfDegree();
+    Mod->tryToDelete();
   }
   return {};
 }
