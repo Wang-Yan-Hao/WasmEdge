@@ -2638,7 +2638,9 @@ WASMEDGE_CAPI_EXPORT void WasmEdge_ModuleInstanceAddGlobal(
 
 WASMEDGE_CAPI_EXPORT void
 WasmEdge_ModuleInstanceDelete(WasmEdge_ModuleInstanceContext *Cxt) noexcept {
-  delete fromModCxt(Cxt);
+  if (Cxt) {
+    WasmEdge::Runtime::Instance::ModuleInstance::Deleter{}(fromModCxt(Cxt));
+  }
 }
 
 // <<<<<<<< WasmEdge module instance functions <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

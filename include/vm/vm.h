@@ -399,7 +399,10 @@ private:
   std::unique_ptr<Runtime::Instance::ModuleInstance> ActiveModInst;
   std::unique_ptr<Runtime::Instance::ComponentInstance> ActiveCompInst;
   /// Registered module instances by user.
-  std::vector<std::unique_ptr<Runtime::Instance::ModuleInstance>> RegModInsts;
+  std::unordered_map<
+      std::string, std::unique_ptr<Runtime::Instance::ModuleInstance,
+                                   Runtime::Instance::ModuleInstance::Deleter>>
+      RegModInsts;
   /// Built-in module instances mapped to the configurations. For WASI.
   std::unordered_map<HostRegistration,
                      std::unique_ptr<Runtime::Instance::ModuleInstance>>

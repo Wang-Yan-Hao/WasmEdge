@@ -76,12 +76,6 @@ public:
                  std::function<void(void *)> Finalizer = nullptr)
       : ModName(Name), HostData(Data), HostDataFinalizer(Finalizer) {}
   virtual ~ModuleInstance() noexcept {
-    // When destroying this module instance, call the callbacks to unlink to the
-    // store managers.
-    for (auto &&[Key, Callback] : LinkedStore) {
-      assuming(Callback);
-      Callback(Key, this);
-    }
     if (HostDataFinalizer.operator bool()) {
       HostDataFinalizer(HostData);
     }
@@ -91,6 +85,15 @@ public:
       }
     }
   }
+
+  struct Deleter {
+    void operator()(ModuleInstance *Mod) const noexcept {
+      if (Mod) {
+        Mod->resetSelfDegree();
+        Mod->tryToDelete();
+      }
+    }
+  };
 
   void incrementInDegree() noexcept {
     InDegree.fetch_add(1, std::memory_order_relaxed);
@@ -116,14 +119,14 @@ public:
   }
 
   void resetSelfDegree() noexcept {
-    SelfDegree.store(0, std::memory_order_release);
-  }
-
-  void tryToDelete() noexcept {
-    if (SelfDegree.load(std::memory_order_acquire) == 0 &&
-        InDegree.load(std::memory_order_acquire) == 0) {
-      delete this;
+    // When destroying this module instance, call the callbacks to unlink to the
+    // store managers.
+    for (auto &&[Key, Callback] : LinkedStore) {
+      assuming(Callback);
+      Callback(Key, this);
     }
+    LinkedStore.clear();
+    SelfDegree.store(0, std::memory_order_release);
   }
 
   std::string_view getModuleName() const noexcept {
@@ -271,6 +274,7 @@ protected:
   friend class Executor::Executor;
   friend class ComponentInstance;
   friend class Runtime::CallingFrame;
+  friend struct Deleter;
 
   /// Create and copy the defined type to this module instance.
   void addDefinedType(const AST::SubType &SType) {
@@ -567,6 +571,13 @@ protected:
     // Unlink a specific (Store, Name) entry.
     std::unique_lock Lock(Mutex);
     LinkedStore.erase(LinkedStoreKey{Store, std::string(Name)});
+  }
+
+  void tryToDelete() noexcept {
+    if (SelfDegree.load(std::memory_order_acquire) == 0 &&
+        InDegree.load(std::memory_order_acquire) == 0) {
+      delete this;
+    }
   }
 
   /// Mutex.

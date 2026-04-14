@@ -210,7 +210,12 @@ Expect<void> VM::unsafeRegisterModule(std::string_view Name,
   // Instantiate and register module.
   EXPECTED_TRY(auto ModInst,
                ExecutorEngine.registerModule(StoreRef, Module, Name));
-  RegModInsts.push_back(std::move(ModInst));
+  RegModInsts.emplace(
+      std::string(Name),
+      std::unique_ptr<WasmEdge::Runtime::Instance::ModuleInstance,
+                      WasmEdge::Runtime::Instance::ModuleInstance::Deleter>(
+          ModInst.release(),
+          WasmEdge::Runtime::Instance::ModuleInstance::Deleter()));
   return {};
 }
 
@@ -226,15 +231,20 @@ VM::unsafeRegisterModule(std::string_view Name,
 }
 
 Expect<void> VM::unsafeUnregisterModule(std::string_view Name) {
-  auto It = std::find_if(
-      RegModInsts.begin(), RegModInsts.end(),
-      [&](const auto &Mod) { return Mod->getModuleName() == Name; });
-
-  if (It != RegModInsts.end()) {
-    auto *Mod = It->release();
-    RegModInsts.erase(It);
-    Mod->resetSelfDegree();
-    Mod->tryToDelete();
+  if (RegModInsts.erase(std::string(Name)) > 0) {
+    return {};
+  }
+  for (auto It = BuiltInModInsts.begin(); It != BuiltInModInsts.end(); ++It) {
+    if (It->second && It->second->getModuleName() == Name) {
+      BuiltInModInsts.erase(It);
+      return {};
+    }
+  }
+  for (auto It = PlugInModInsts.begin(); It != PlugInModInsts.end(); ++It) {
+    if (*It && (*It)->getModuleName() == Name) {
+      PlugInModInsts.erase(It);
+      return {};
+    }
   }
   return {};
 }
