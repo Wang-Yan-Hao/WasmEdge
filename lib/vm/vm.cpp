@@ -210,12 +210,7 @@ Expect<void> VM::unsafeRegisterModule(std::string_view Name,
   // Instantiate and register module.
   EXPECTED_TRY(auto ModInst,
                ExecutorEngine.registerModule(StoreRef, Module, Name));
-  RegModInsts.emplace(
-      std::string(Name),
-      std::unique_ptr<WasmEdge::Runtime::Instance::ModuleInstance,
-                      WasmEdge::Runtime::Instance::ModuleInstance::Deleter>(
-          ModInst.release(),
-          WasmEdge::Runtime::Instance::ModuleInstance::Deleter()));
+  RegModInsts.emplace(std::string(Name), Runtime::Instance::ModuleInstancePtr(ModInst.release()));
   return {};
 }
 

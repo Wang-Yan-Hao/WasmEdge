@@ -75,6 +75,7 @@ public:
   ModuleInstance(std::string_view Name, void *Data = nullptr,
                  std::function<void(void *)> Finalizer = nullptr)
       : ModName(Name), HostData(Data), HostDataFinalizer(Finalizer) {}
+
   virtual ~ModuleInstance() noexcept {
     if (HostDataFinalizer.operator bool()) {
       HostDataFinalizer(HostData);
@@ -94,40 +95,6 @@ public:
       }
     }
   };
-
-  void incrementInDegree() noexcept {
-    InDegree.fetch_add(1, std::memory_order_relaxed);
-  }
-
-  void decrementInDegree() noexcept {
-    if (InDegree.fetch_sub(1, std::memory_order_acq_rel) == 1 &&
-        SelfDegree.load(std::memory_order_acquire) == 0) {
-      delete this;
-    }
-  }
-
-  void linkDependency(ModuleInstance &Provider) {
-    std::unique_lock Lock(Mutex);
-    auto It =
-        std::find(DependencyList.begin(), DependencyList.end(), &Provider);
-    if (It != DependencyList.end()) {
-      return;
-    }
-
-    DependencyList.push_back(&Provider);
-    Provider.incrementInDegree();
-  }
-
-  void resetSelfDegree() noexcept {
-    // When destroying this module instance, call the callbacks to unlink to the
-    // store managers.
-    for (auto &&[Key, Callback] : LinkedStore) {
-      assuming(Callback);
-      Callback(Key, this);
-    }
-    LinkedStore.clear();
-    SelfDegree.store(0, std::memory_order_release);
-  }
 
   std::string_view getModuleName() const noexcept {
     std::shared_lock Lock(Mutex);
@@ -274,7 +241,6 @@ protected:
   friend class Executor::Executor;
   friend class ComponentInstance;
   friend class Runtime::CallingFrame;
-  friend struct Deleter;
 
   /// Create and copy the defined type to this module instance.
   void addDefinedType(const AST::SubType &SType) {
@@ -573,6 +539,40 @@ protected:
     LinkedStore.erase(LinkedStoreKey{Store, std::string(Name)});
   }
 
+  void incrementInDegree() noexcept {
+    InDegree.fetch_add(1, std::memory_order_relaxed);
+  }
+
+  void decrementInDegree() noexcept {
+    if (InDegree.fetch_sub(1, std::memory_order_acq_rel) == 1 &&
+        SelfDegree.load(std::memory_order_acquire) == 0) {
+      delete this;
+    }
+  }
+
+  void linkDependency(ModuleInstance &Provider) {
+    std::unique_lock Lock(Mutex);
+    auto It =
+        std::find(DependencyList.begin(), DependencyList.end(), &Provider);
+    if (It != DependencyList.end()) {
+      return;
+    }
+
+    DependencyList.push_back(&Provider);
+    Provider.incrementInDegree();
+  }
+
+  void resetSelfDegree() noexcept {
+    // When destroying this module instance, call the callbacks to unlink to the
+    // store managers.
+    for (auto &&[Key, Callback] : LinkedStore) {
+      assuming(Callback);
+      Callback(Key, this);
+    }
+    LinkedStore.clear();
+    SelfDegree.store(0, std::memory_order_release);
+  }
+
   void tryToDelete() noexcept {
     if (SelfDegree.load(std::memory_order_acquire) == 0 &&
         InDegree.load(std::memory_order_acquire) == 0) {
@@ -644,6 +644,9 @@ protected:
   /// Dependency list of the provider module instances.
   std::vector<Instance::ModuleInstance *> DependencyList;
 };
+
+using ModuleInstancePtr =
+    std::unique_ptr<ModuleInstance, ModuleInstance::Deleter>;
 
 } // namespace Instance
 } // namespace Runtime

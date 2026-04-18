@@ -3524,12 +3524,14 @@ WasmEdge_VMDeleteRegisteredModule(const WasmEdge_VMContext *Cxt,
     return; // Invalid store context
   }
 
+  // Unregister from VM
+  (const_cast<WasmEdge_VMContext *>(Cxt)->VM)
+      .unregisterModule(genStrView(ModuleName));
   const WasmEdge_ModuleInstanceContext *ModInst =
       WasmEdge_StoreFindModule(StoreCxt, ModuleName);
   if (ModInst) {
+    // Unregister from StoreManager
     fromStoreCxt(StoreCxt)->unregisterModule(genStrView(ModuleName));
-    (const_cast<WasmEdge_VMContext *>(Cxt)->VM)
-        .unregisterModule(genStrView(ModuleName));
   }
 }
 
