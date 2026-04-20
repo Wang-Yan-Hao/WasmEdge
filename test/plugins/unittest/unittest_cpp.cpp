@@ -16,7 +16,7 @@
 
 namespace {
 
-std::unique_ptr<WasmEdge::Runtime::Instance::ModuleInstance> createModuleC() {
+WasmEdge::Runtime::Instance::ModuleInstance::ModuleInstancePtr createModuleC() {
   using namespace std::literals::string_view_literals;
   WasmEdge::Plugin::Plugin::load(std::filesystem::u8path(
       "./" WASMEDGE_LIB_PREFIX
@@ -31,7 +31,8 @@ std::unique_ptr<WasmEdge::Runtime::Instance::ModuleInstance> createModuleC() {
   return {};
 }
 
-std::unique_ptr<WasmEdge::Runtime::Instance::ModuleInstance> createModuleCPP() {
+WasmEdge::Runtime::Instance::ModuleInstance::ModuleInstancePtr
+createModuleCPP() {
   using namespace std::literals::string_view_literals;
   WasmEdge::Plugin::Plugin::load(std::filesystem::u8path(
       "./" WASMEDGE_LIB_PREFIX

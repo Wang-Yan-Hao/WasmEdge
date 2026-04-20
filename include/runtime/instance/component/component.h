@@ -327,7 +327,7 @@ public:
   }
 
   // Index space: core module instance.
-  void addCoreModuleInstance(std::unique_ptr<ModuleInstance> &&Inst) noexcept {
+  void addCoreModuleInstance(ModuleInstance::ModuleInstancePtr &&Inst) noexcept {
     OwnedCoreModInsts.push_back(std::move(Inst));
     CoreModInsts.push_back(OwnedCoreModInsts.back().get());
   }
@@ -375,7 +375,7 @@ private:
   std::vector<std::unique_ptr<ComponentInstance>> OwnedCompInsts;
   std::vector<std::unique_ptr<FunctionInstance>> OwnedCoreFuncInsts;
   // std::vector<std::unique_ptr<AST::Component::CoreDefType>> OwnedCoreTypes;
-  std::vector<std::unique_ptr<ModuleInstance>> OwnedCoreModInsts;
+  std::vector<ModuleInstance::ModuleInstancePtr> OwnedCoreModInsts;
 
   // Export alias.
   std::map<std::string, Component::FunctionInstance *, std::less<>>

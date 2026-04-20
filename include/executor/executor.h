@@ -159,11 +159,11 @@ public:
   const Configure &getConfigure() const { return Conf; }
 
   /// Instantiate a WASM Module into an anonymous module instance.
-  Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+  Expect<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
   instantiateModule(Runtime::StoreManager &StoreMgr, const AST::Module &Mod);
 
   /// Instantiate and register a WASM module into a named module instance.
-  Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+  Expect<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
   registerModule(Runtime::StoreManager &StoreMgr, const AST::Module &Mod,
                  std::string_view Name);
 
@@ -242,7 +242,7 @@ private:
   /// \name Functions for instantiation.
   /// @{
   /// Instantiation of Module Instance.
-  Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+  Expect<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
   instantiate(Runtime::StoreManager &StoreMgr, const AST::Module &Mod,
               std::optional<std::string_view> Name = std::nullopt);
 
@@ -313,7 +313,7 @@ private:
               const AST::Component::Component &Comp);
 
   /// Instantiation of Child Core Module Instance.
-  Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+  Expect<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
   instantiate(Runtime::Instance::ComponentImportManager &ImportMgr,
               const AST::Module &Mod);
 

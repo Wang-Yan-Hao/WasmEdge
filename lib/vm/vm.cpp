@@ -46,7 +46,7 @@ private:
 };
 
 template <typename T>
-std::unique_ptr<Runtime::Instance::ModuleInstance>
+Runtime::Instance::ModuleInstance::ModuleInstancePtr
 createPluginModule(std::string_view PName, std::string_view MName) {
   using namespace std::literals::string_view_literals;
   if (const auto *Plugin = Plugin::Plugin::find(PName)) {
@@ -56,7 +56,7 @@ createPluginModule(std::string_view PName, std::string_view MName) {
   }
   spdlog::debug("Plugin: {} , module name: {} not found. Mock instead."sv,
                 PName, MName);
-  return std::make_unique<T>();
+  return Runtime::Instance::ModuleInstance::ModuleInstancePtr(new T());
 }
 } // namespace
 
@@ -90,8 +90,8 @@ void VM::unsafeLoadBuiltInHosts() {
   // TODO: This will be extended for the versionlized WASI in the future.
   BuiltInModInsts.clear();
   if (Conf.hasHostRegistration(HostRegistration::Wasi)) {
-    std::unique_ptr<Runtime::Instance::ModuleInstance> WasiMod =
-        std::make_unique<Host::WasiModule>();
+    Runtime::Instance::ModuleInstance::ModuleInstancePtr WasiMod =
+        Runtime::Instance::ModuleInstance::createModulePtr<Host::WasiModule>();
     BuiltInModInsts.insert({HostRegistration::Wasi, std::move(WasiMod)});
   }
 }
@@ -210,7 +210,7 @@ Expect<void> VM::unsafeRegisterModule(std::string_view Name,
   // Instantiate and register module.
   EXPECTED_TRY(auto ModInst,
                ExecutorEngine.registerModule(StoreRef, Module, Name));
-  RegModInsts.emplace(std::string(Name), Runtime::Instance::ModuleInstancePtr(ModInst.release()));
+  RegModInsts.emplace(Name, std::move(ModInst));
   return {};
 }
 

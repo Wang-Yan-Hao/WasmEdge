@@ -62,9 +62,9 @@ public:
     return Desc->Description;
   }
 
-  std::unique_ptr<Runtime::Instance::ModuleInstance> create() const noexcept {
+  Runtime::Instance::ModuleInstance::ModuleInstancePtr create() const noexcept {
     assuming(Desc);
-    return std::unique_ptr<Runtime::Instance::ModuleInstance>(
+    return Runtime::Instance::ModuleInstance::ModuleInstancePtr(
         Desc->Create(Desc));
   }
 

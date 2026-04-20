@@ -13,7 +13,7 @@ namespace WasmEdge {
 namespace Executor {
 
 /// Instantiate a WASM Module. See "include/executor/executor.h".
-Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+Expect<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
 Executor::instantiateModule(Runtime::StoreManager &StoreMgr,
                             const AST::Module &Mod) {
   return instantiate(StoreMgr, Mod).map_error([this](auto E) {
@@ -28,7 +28,7 @@ Executor::instantiateModule(Runtime::StoreManager &StoreMgr,
 }
 
 /// Register a named WASM module. See "include/executor/executor.h".
-Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+Expect<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
 Executor::registerModule(Runtime::StoreManager &StoreMgr,
                          const AST::Module &Mod, std::string_view Name) {
   return instantiate(StoreMgr, Mod, Name).map_error([this](auto E) {

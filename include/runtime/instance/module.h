@@ -72,9 +72,26 @@ class ComponentInstance;
 
 class ModuleInstance {
 public:
+  struct Deleter {
+    void operator()(ModuleInstance *Mod) const noexcept {
+      if (Mod) {
+        Mod->resetSelfDegree();
+        Mod->tryToDelete();
+      }
+    }
+  };
+
+  using ModuleInstancePtr =
+      std::unique_ptr<ModuleInstance, ModuleInstance::Deleter>;
+
   ModuleInstance(std::string_view Name, void *Data = nullptr,
                  std::function<void(void *)> Finalizer = nullptr)
       : ModName(Name), HostData(Data), HostDataFinalizer(Finalizer) {}
+
+  template <typename T = ModuleInstance, typename... Args>
+  static ModuleInstancePtr createModulePtr(Args &&...args) {
+    return ModuleInstancePtr(new T(std::forward<Args>(args)...));
+  }
 
   virtual ~ModuleInstance() noexcept {
     unlinkAllStores();
@@ -87,15 +104,6 @@ public:
       }
     }
   }
-
-  struct Deleter {
-    void operator()(ModuleInstance *Mod) const noexcept {
-      if (Mod) {
-        Mod->resetSelfDegree();
-        Mod->tryToDelete();
-      }
-    }
-  };
 
   std::string_view getModuleName() const noexcept {
     std::shared_lock Lock(Mutex);
@@ -651,9 +659,6 @@ protected:
   /// Dependency list of the provider module instances.
   std::vector<Instance::ModuleInstance *> DependencyList;
 };
-
-using ModuleInstancePtr =
-    std::unique_ptr<ModuleInstance, ModuleInstance::Deleter>;
 
 } // namespace Instance
 } // namespace Runtime

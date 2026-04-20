@@ -396,18 +396,18 @@ private:
   std::unique_ptr<AST::Module> Mod;
   std::unique_ptr<AST::Component::Component> Comp;
   /// Active module instance.
-  std::unique_ptr<Runtime::Instance::ModuleInstance> ActiveModInst;
+  Runtime::Instance::ModuleInstance::ModuleInstancePtr ActiveModInst;
   std::unique_ptr<Runtime::Instance::ComponentInstance> ActiveCompInst;
   /// Registered module instances by user.
-  std::unordered_map<
-      std::string, Runtime::Instance::ModuleInstancePtr>
+  std::unordered_map<std::string,
+                     Runtime::Instance::ModuleInstance::ModuleInstancePtr>
       RegModInsts;
   /// Built-in module instances mapped to the configurations. For WASI.
   std::unordered_map<HostRegistration,
-                     std::unique_ptr<Runtime::Instance::ModuleInstance>>
+                     Runtime::Instance::ModuleInstance::ModuleInstancePtr>
       BuiltInModInsts;
   /// Loaded module instances from plug-ins.
-  std::vector<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+  std::vector<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
       PlugInModInsts;
   std::vector<std::unique_ptr<Runtime::Instance::ComponentInstance>>
       PlugInCompInsts;

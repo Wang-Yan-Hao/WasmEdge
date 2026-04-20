@@ -22,15 +22,15 @@ Executor::instantiate(Runtime::Instance::ComponentInstance &CompInst,
   return {};
 }
 
-Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+Expect<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
 Executor::instantiate(Runtime::Instance::ComponentImportManager &ImportMgr,
                       const AST::Module &Mod) {
   // Create the stack manager.
   Runtime::StackManager StackMgr;
 
   // Create the module instance.
-  std::unique_ptr<Runtime::Instance::ModuleInstance> ModInst =
-      std::make_unique<Runtime::Instance::ModuleInstance>("");
+  Runtime::Instance::ModuleInstance::ModuleInstancePtr ModInst =
+      Runtime::Instance::ModuleInstance::createModulePtr("");
 
   // Instantiate Function Types in Module Instance. (TypeSec)
   for (auto &SubType : Mod.getTypeSection().getContent()) {

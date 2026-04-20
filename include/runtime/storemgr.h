@@ -136,7 +136,7 @@ private:
   mutable std::shared_mutex Mutex;
 
   /// Collect the instantiation failed module.
-  void recycleModule(std::unique_ptr<Instance::ModuleInstance> &&Mod) {
+  void recycleModule(Instance::ModuleInstance::ModuleInstancePtr &&Mod) {
     FailedMod = std::move(Mod);
   }
 
@@ -151,7 +151,7 @@ private:
   /// referenced even if instantiation failed. Therefore store the failed module
   /// instance here to keep the instances.
   /// FIXME: Is this necessary to be a vector?
-  std::unique_ptr<Instance::ModuleInstance> FailedMod;
+  Instance::ModuleInstance::ModuleInstancePtr FailedMod;
 };
 
 } // namespace Runtime

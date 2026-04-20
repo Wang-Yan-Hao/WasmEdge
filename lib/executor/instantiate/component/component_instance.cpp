@@ -33,7 +33,7 @@ Executor::instantiate(Runtime::Instance::ComponentInstance &CompInst,
     } else {
       // Inline exports case.
       // Create a core module instance with the exports.
-      auto Mod = std::make_unique<Runtime::Instance::ModuleInstance>("");
+      auto Mod = Runtime::Instance::ModuleInstance::createModulePtr("");
       uint32_t ExpIdx[4] = {0, 0, 0, 0};
 
       for (const auto &Exp : Expr.getInlineExports()) {

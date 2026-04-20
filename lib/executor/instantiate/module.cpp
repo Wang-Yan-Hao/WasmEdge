@@ -13,7 +13,7 @@ namespace WasmEdge {
 namespace Executor {
 
 // Instantiate module instance. See "include/executor/Executor.h".
-Expect<std::unique_ptr<Runtime::Instance::ModuleInstance>>
+Expect<Runtime::Instance::ModuleInstance::ModuleInstancePtr>
 Executor::instantiate(Runtime::StoreManager &StoreMgr, const AST::Module &Mod,
                       std::optional<std::string_view> Name) {
   // Check the module is validated.
@@ -37,11 +37,11 @@ Executor::instantiate(Runtime::StoreManager &StoreMgr, const AST::Module &Mod,
   }
 
   // Insert the module instance to store manager and retrieve instance.
-  std::unique_ptr<Runtime::Instance::ModuleInstance> ModInst;
+  Runtime::Instance::ModuleInstance::ModuleInstancePtr ModInst;
   if (Name.has_value()) {
-    ModInst = std::make_unique<Runtime::Instance::ModuleInstance>(Name.value());
+    ModInst = Runtime::Instance::ModuleInstance::createModulePtr(Name.value());
   } else {
-    ModInst = std::make_unique<Runtime::Instance::ModuleInstance>("");
+    ModInst = Runtime::Instance::ModuleInstance::createModulePtr("");
   }
 
   // Instantiate Function Types in Module Instance. (TypeSec)

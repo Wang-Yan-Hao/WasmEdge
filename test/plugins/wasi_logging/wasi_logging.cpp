@@ -13,17 +13,20 @@
 
 namespace {
 
-template <typename T, typename U>
-inline std::unique_ptr<T> dynamicPointerCast(std::unique_ptr<U> &&R) noexcept {
+template <typename T, typename U, typename D = std::default_delete<U>>
+inline std::unique_ptr<T, D>
+dynamicPointerCast(std::unique_ptr<U, D> &&R) noexcept {
   static_assert(std::has_virtual_destructor_v<T>);
   T *P = dynamic_cast<T *>(R.get());
   if (P) {
     R.release();
   }
-  return std::unique_ptr<T>(P);
+  return std::unique_ptr<T, D>(P);
 }
 
-std::unique_ptr<WasmEdge::Host::WasiLoggingModule> createModule() {
+std::unique_ptr<WasmEdge::Host::WasiLoggingModule,
+                WasmEdge::Runtime::Instance::ModuleInstance::Deleter>
+createModule() {
   using namespace std::literals::string_view_literals;
   // The built-in plugins are loaded when loading from default paths.
   WasmEdge::Plugin::Plugin::loadFromDefaultPaths();
