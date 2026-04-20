@@ -77,6 +77,7 @@ public:
       : ModName(Name), HostData(Data), HostDataFinalizer(Finalizer) {}
 
   virtual ~ModuleInstance() noexcept {
+    unlinkAllStores();
     if (HostDataFinalizer.operator bool()) {
       HostDataFinalizer(HostData);
     }
@@ -539,6 +540,19 @@ protected:
     LinkedStore.erase(LinkedStoreKey{Store, std::string(Name)});
   }
 
+  void unlinkAllStores() noexcept {
+    if (LinkedStore.empty()) {
+      return;
+    }
+    // When destroying this module instance, call the callbacks to unlink to the
+    // store managers.
+    for (auto &&[Key, Callback] : LinkedStore) {
+      assuming(Callback);
+      Callback(Key, this);
+    }
+    LinkedStore.clear();
+  }
+
   void incrementInDegree() noexcept {
     InDegree.fetch_add(1, std::memory_order_relaxed);
   }
@@ -557,19 +571,12 @@ protected:
     if (It != DependencyList.end()) {
       return;
     }
-
     DependencyList.push_back(&Provider);
     Provider.incrementInDegree();
   }
 
   void resetSelfDegree() noexcept {
-    // When destroying this module instance, call the callbacks to unlink to the
-    // store managers.
-    for (auto &&[Key, Callback] : LinkedStore) {
-      assuming(Callback);
-      Callback(Key, this);
-    }
-    LinkedStore.clear();
+    unlinkAllStores();
     SelfDegree.store(0, std::memory_order_release);
   }
 
